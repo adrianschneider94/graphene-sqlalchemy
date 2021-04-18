@@ -1,13 +1,11 @@
 from enum import EnumMeta
-
+from graphene import (ID, Boolean, Dynamic, Enum, Field, Float, Int, List,
+                      String, NonNull)
+from graphene.types.json import JSONString
 from singledispatch import singledispatch
 from sqlalchemy import types
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import interfaces, strategies
-
-from graphene import (ID, Boolean, Dynamic, Enum, Field, Float, Int, List,
-                      String)
-from graphene.types.json import JSONString
 
 from .batching import get_batch_resolver
 from .enums import enum_for_sa_enum
@@ -20,7 +18,6 @@ try:
     from sqlalchemy_utils import ChoiceType, JSONType, ScalarListType, TSVectorType
 except ImportError:
     ChoiceType = JSONType = ScalarListType = TSVectorType = object
-
 
 is_selectin_available = getattr(strategies, 'SelectInLoader', None)
 
@@ -44,6 +41,7 @@ def convert_sqlalchemy_relationship(relationship_prop, obj_type, connection_fiel
     :param dict field_kwargs:
     :rtype: Dynamic
     """
+
     def dynamic_type():
         """:rtype: Field|None"""
         direction = relationship_prop.direction
@@ -99,7 +97,7 @@ def _convert_o2m_or_m2m_relationship(relationship_prop, obj_type, batching, conn
     child_type = obj_type._meta.registry.get_type_for_model(relationship_prop.mapper.entity)
 
     if not child_type._meta.connection:
-        return Field(List(child_type), **field_kwargs)
+        return Field(List(NonNull(child_type)), required=True, **field_kwargs)
 
     # TODO Allow override of connection_field_factory and resolver via ORMField
     if connection_field_factory is None:
